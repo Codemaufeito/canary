@@ -489,7 +489,7 @@ void Game::loadBoostedCreature() {
 	}
 
 	const auto oldRace = result->getNumber<uint16_t>("raceid");
-	const auto monsterlist = getBestiaryList();
+	const auto &monsterlist = getBestiaryList();
 
 	struct MonsterRace {
 		uint16_t raceId { 0 };
