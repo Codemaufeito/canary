@@ -1858,7 +1858,7 @@ bool PlayerWheel::saveDBPlayerSlotPointsOnLogout() const {
 }
 
 uint16_t PlayerWheel::getExtraPoints() const {
-	if (m_player.getLevel() < 51) {
+	if (m_player.getLevel() < 51) {		
 		return 0;
 	}
 
@@ -1874,16 +1874,38 @@ uint16_t PlayerWheel::getExtraPoints() const {
 	return totalBonus;
 }
 
+const uint32_t ADDITIONAL_POINTS[] = { 0, 1748, 3496, 5244, 6992, 8740, 10488, 12236 };
+
 uint16_t PlayerWheel::getWheelPoints(bool includeExtraPoints /* = true*/) const {
-	const uint32_t level = m_player.getLevel();
-	auto totalPoints = std::max(0u, (level - m_minLevelToStartCountPoints)) * m_pointsPerLevel;
+    const uint32_t level = m_player.getLevel();
+    auto totalPoints = std::max(0u, (level - m_minLevelToStartCountPoints)) * m_pointsPerLevel;
 
-	if (includeExtraPoints) {
-		const auto extraPoints = getExtraPoints();
-		totalPoints += extraPoints;
-	}
+    // 🔍 Buscar o KV do jogador corretamente
+    auto playerKV = g_kv().scoped("player")->scoped(std::to_string(m_player.getGUID()));
+    const auto resetCountValue = playerKV->get("reset_count");
 
-	return totalPoints;
+    uint32_t resetCount = 0;
+
+    if (resetCountValue.has_value()) {  // 🛠 Garantimos que existe antes de acessar
+        resetCount = static_cast<uint32_t>(resetCountValue->getNumber());
+      //  std::cout << "✅ reset_count encontrado: " << resetCount << std::endl;
+    } else {
+        //std::cerr << "⚠️ reset_count não encontrado. O jogador pode não ter resets." << std::endl;
+        return totalPoints; // Se não há resets, retorna os pontos básicos sem erro
+    }
+
+    // Aplicação dos pontos adicionais com reset limitado a 7
+    if (resetCount > 0) {
+        const uint32_t cappedResetCount = std::min(resetCount, 7u);
+        totalPoints += ADDITIONAL_POINTS[cappedResetCount];
+    }
+
+    if (includeExtraPoints) {
+        const auto extraPoints = getExtraPoints();
+        totalPoints += extraPoints;
+    }
+
+    return totalPoints;
 }
 
 void PlayerWheel::addInitialGems() {

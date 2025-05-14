@@ -118,7 +118,6 @@ enum ConditionType_t : uint8_t {
 	CONDITION_GOSHNARTAINT = 35,
 	CONDITION_POWERLESS = 36,
 	CONDITION_AGONY = 37,
-
 	// Need the last ever
 	CONDITION_COUNT
 };
@@ -286,6 +285,8 @@ enum CallBackParam_t {
 	CALLBACK_PARAM_CHAINVALUE,
 	CALLBACK_PARAM_CHAINPICKER,
 };
+
+ 
 
 enum SpeechBubble_t {
 	SPEECHBUBBLE_NONE = 0,
@@ -1578,7 +1579,6 @@ struct CombatDamage {
 	std::string exString;
 	bool fatal = false;
 	bool hazardDodge = false;
-
 	int32_t criticalDamage = 0;
 	int32_t criticalChance = 0;
 	int32_t damageMultiplier = 0;
@@ -1685,6 +1685,7 @@ struct Outfit_t {
 	uint8_t lookMountBody = 0;
 	uint8_t lookMountLegs = 0;
 	uint8_t lookMountFeet = 0;
+	uint16_t currentMount = 0;
 	uint16_t lookFamiliarsType = 0;
 	uint16_t lookWing = 0;
 	uint16_t lookAura = 0;

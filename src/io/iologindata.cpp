@@ -99,7 +99,7 @@ bool IOLoginData::loadPlayer(const std::shared_ptr<Player> &player, const DBResu
 
 	try {
 		// First
-		if (!IOLoginDataLoad::loadPlayerBasicInfo(player, result)) {
+			if (!IOLoginDataLoad::loadPlayerBasicInfo(player, result)) {
 			g_logger().warn("[{}] - Failed to load player basic info", __FUNCTION__);
 			return false;
 		}
@@ -277,7 +277,15 @@ bool IOLoginData::savePlayerGuard(const std::shared_ptr<Player> &player) {
 	if (!IOLoginDataSave::savePlayerStorage(player)) {
 		throw DatabaseException("[IOLoginDataSave::savePlayerStorage] - Failed to save player storage: " + player->getName());
 	}
+	
+	if (!IOLoginDataSave::savePlayerOutfits(player)) {
+		throw DatabaseException("[IOLoginDataSave::savePlayerOutfits] - Failed to save player outfits: " + player->getName());
+	}
 
+	if (!IOLoginDataSave::savePlayerMounts(player)) {
+		throw DatabaseException("[IOLoginDataSave::savePlayerMounts] - Failed to save player mounts: " + player->getName());
+	}
+	
 	return true;
 }
 
