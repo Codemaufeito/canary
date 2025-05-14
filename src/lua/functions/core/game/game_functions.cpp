@@ -170,21 +170,21 @@ int GameFunctions::luaGameCreateNpcType(lua_State* L) {
 }
 
 int GameFunctions::luaGameGetMonsterTypeByName(lua_State* L) {
-	if (!isString(L, 1)) {
-		reportErrorFunc("First argument must be a string");
-		return 1;
+	if (!Lua::isString(L, 1)) {
+		Lua::reportErrorFunc("First argument must be a string");
+	return 1;
 	}
 
-	const auto name = getString(L, 1);
+	const std::string name = Lua::getString(L, 1);
 	const auto &mType = g_monsters().getMonsterType(name);
 	if (!mType) {
-		reportErrorFunc(fmt::format("MonsterType with name {} not found", name));
+		Lua::reportErrorFunc(fmt::format("MonsterType with name {} not found", name));
 		return 1;
 	}
 
-	pushUserdata<MonsterType>(L, mType);
-	setMetatable(L, -1, "MonsterType");
-	return 1;
+	Lua::pushUserdata<MonsterType>(L, mType);
+	Lua::setMetatable(L, -1, "MonsterType");
+ return 1;
 }
 
 int GameFunctions::luaGameGetSpectators(lua_State* L) {

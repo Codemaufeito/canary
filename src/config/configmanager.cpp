@@ -60,7 +60,6 @@ bool ConfigManager::load() {
 		loadIntConfig(L, MARKET_REFRESH_PRICES, "marketRefreshPricesInterval", 30);
 		loadIntConfig(L, PREMIUM_DEPOT_LIMIT, "premiumDepotLimit", 8000);
 		loadIntConfig(L, SQL_PORT, "mysqlPort", 3306); 
-		loadIntConfig(L, STASH_ITEMS, "stashItemCount", 5000);
 		loadIntConfig(L, STATUS_PORT, "statusProtocolPort", 97172);
 		loadIntConfig(L, WORLD_ID, "worldId", 1);
 

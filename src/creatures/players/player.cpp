@@ -1362,7 +1362,7 @@ bool Player::canWalkthrough(const std::shared_ptr<Creature> &creature) {
 	const auto &npc = creature->getNpc();
 	bool noPvpThroughAtSummon = false;
 	// Allow players to walk through summons in no pvp worlds
-	if (g_game().getWorldType() == WORLD_TYPE_NO_PVP) {
+	if (g_game().worlds().getCurrentWorld()->type == WORLD_TYPE_NO_PVP) {
 		const auto &monsterMaster = monster ? monster->getMaster() : nullptr;
 		const auto &monsterMasterPlayer = monsterMaster ? monsterMaster->getPlayer() : nullptr;
 		if (monsterMasterPlayer) {
