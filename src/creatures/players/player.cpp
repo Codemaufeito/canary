@@ -1253,24 +1253,7 @@ uint16_t Player::getLookCorpse() const {
 
 void Player::addStorageValue(const uint32_t key, const int32_t value, const bool isLogin /* = false*/) {
 	if (IS_IN_KEYRANGE(key, RESERVED_RANGE)) {
-		if (IS_IN_KEYRANGE(key, OUTFITS_RANGE)) {
-			outfits.emplace_back(
-				value >> 16,
-				value & 0xFF
-			);
-			return;
-		}
-		if (IS_IN_KEYRANGE(key, MOUNTS_RANGE)) {
-			// do nothing
-		} else if (IS_IN_KEYRANGE(key, WING_RANGE)) {
-			// do nothing
-		} else if (IS_IN_KEYRANGE(key, EFFECT_RANGE)) {
-			// do nothing
-		} else if (IS_IN_KEYRANGE(key, AURA_RANGE)) {
-			// do nothing
-		} else if (IS_IN_KEYRANGE(key, SHADER_RANGE)) {
-			// do nothing
-		} else if (IS_IN_KEYRANGE(key, FAMILIARS_RANGE)) {
+		if (IS_IN_KEYRANGE(key, FAMILIARS_RANGE)) {
 			familiars.emplace_back(
 				value >> 16
 			);
@@ -3341,6 +3324,58 @@ void Player::addExperience(const std::shared_ptr<Creature> &target, uint64_t exp
 		exp *= animusMasteryMultiplier;
 	}
 
+// --- SISTEMA DE RESET ---
+    // Utiliza o KV para verificar o valor de "reset_count"
+auto playerKV = g_kv().scoped("player")->scoped(std::to_string(getGUID()));
+const auto resetCountValue = playerKV->get("reset_count");
+uint32_t resetCount = 0;
+if (resetCountValue.has_value()) {
+    // Se o ValueWrapper possuir um método getNumber() que retorne o valor numérico
+    resetCount = static_cast<uint32_t>(resetCountValue.value().getNumber());
+    // Caso não possua, verifique a documentação do ValueWrapper e adapte a conversão,
+    // por exemplo, se houver um operador de conversão para std::string:
+    // resetCount = std::stoi(static_cast<std::string>(resetCountValue.value()));
+}
+
+
+    double bonusPercent = 0.0;
+    if (resetCount == 1) {
+        exp = static_cast<uint64_t>(exp * 1.10);
+        bonusPercent = 10.0;
+    } else if (resetCount == 2 || resetCount == 3) {
+        exp = static_cast<uint64_t>(exp * 1.15);
+        bonusPercent = 15.0;
+    } else if (resetCount == 4) {
+        exp = static_cast<uint64_t>(exp * 1.20);
+        bonusPercent = 20.0;
+    } else if (resetCount == 5) {
+        exp = static_cast<uint64_t>(exp * 1.25);
+        bonusPercent = 25.0;
+    } else if (resetCount == 6) {
+        exp = static_cast<uint64_t>(exp * 1.28);
+        bonusPercent = 28.0;
+    } else if (resetCount == 7) {
+        exp = static_cast<uint64_t>(exp * 1.30);
+        bonusPercent = 30.0;
+    } else if (resetCount == 8) {
+        exp = static_cast<uint64_t>(exp * 1.32);
+        bonusPercent = 32.0;
+    } else if (resetCount == 9 || resetCount == 10 || resetCount == 11) {
+        exp = static_cast<uint64_t>(exp * 1.35);
+        bonusPercent = 35.0;
+    } else if (resetCount == 12 || resetCount == 13) {
+        exp = static_cast<uint64_t>(exp * 1.38);
+        bonusPercent = 38.0;
+    } else if (resetCount == 14) {
+        exp = static_cast<uint64_t>(exp * 1.40);
+        bonusPercent = 40.0;
+    } else if (resetCount == 15) {
+        exp = static_cast<uint64_t>(exp * 1.45);
+        bonusPercent = 45.0;
+    }
+    // --- Fim do SISTEMA DE RESET ---
+
+
 	experience += exp;
 
 	if (sendText) {
@@ -3355,6 +3390,12 @@ void Player::addExperience(const std::shared_ptr<Creature> &target, uint64_t exp
 		if (handleAnimusMastery) {
 			expString = fmt::format("{} (animus mastery bonus {:.1f}%)", expString, (animusMasteryMultiplier - 1) * 100);
 		}
+
+
+       if (bonusPercent > 0) {
+            expString = fmt::format("{} (Reset bonus {:.0f}%)", expString, bonusPercent);
+        }
+
 
 		TextMessage message(MESSAGE_EXPERIENCE, "You gained " + expString + (handleHazardExperience ? " (Hazard)" : ""));
 		message.position = position;
@@ -3808,6 +3849,20 @@ void Player::death(const std::shared_ptr<Creature> &lastHitCreature) {
 		sendTextMessage(MESSAGE_EVENT_ADVANCE, "You are dead.");
 		std::ostringstream lostExp;
 		lostExp << "You lost " << expLoss << " experience.";
+
+		std::cout << "[!] -> O jogador " << this->getName() << " morreu e perdeu o total de " << expLoss << " experiência." << std::endl;
+
+
+   
+		int64_t high = expLoss / 1000000000; // Parte alta: bilhões
+		int64_t low = expLoss % 1000000000;  // Parte baixa: o resto
+
+		// Usando o sistema KV para armazenar os valores com conversão explícita
+		auto playerKV = g_kv().scoped("player")->scoped(std::to_string(getGUID()));
+
+		// Solução 1: Converter para double (funciona para todos os valores)
+		playerKV->set("exp_loss_high", static_cast<double>(high));
+		playerKV->set("exp_loss_low", static_cast<double>(low));
 
 		// Skill loss
 		for (uint8_t i = SKILL_FIRST; i <= SKILL_LAST; ++i) { // For each skill
@@ -6274,21 +6329,18 @@ bool Player::canWear(uint16_t lookType, uint8_t addons) const {
 		return true;
 	}
 
-	for (const auto &outfitEntry : outfits) {
-		if (outfitEntry.lookType != lookType) {
-			continue;
+		for (const auto &outfitEntry : outfitsMap) {
+		if (outfitEntry.lookType == lookType) {
+			if (outfitEntry.addons == addons || outfitEntry.addons == 3 || addons == 0) {
+				return true;
+			}
+			return false; // have lookType on list and addons don't match
 		}
-		return (outfitEntry.addons & addons) == addons;
 	}
 	return false;
 }
 
 void Player::genReservedStorageRange() {
-	// generate outfits range
-	uint32_t outfits_key = PSTRG_OUTFITS_RANGE_START;
-	for (const auto &entry : outfits) {
-		storageMap[++outfits_key] = (entry.lookType << 16) | entry.addons;
-	}
 	// generate familiars range
 	uint32_t familiar_key = PSTRG_FAMILIARS_RANGE_START;
 	for (const auto &entry : familiars) {
@@ -6315,20 +6367,20 @@ void Player::setSpecialMenuAvailable(bool stashBool, bool marketMenuBool, bool d
 }
 
 void Player::addOutfit(uint16_t lookType, uint8_t addons) {
-	for (auto &outfitEntry : outfits) {
+	for (auto &outfitEntry : outfitsMap) {
 		if (outfitEntry.lookType == lookType) {
 			outfitEntry.addons |= addons;
 			return;
 		}
 	}
-	outfits.emplace_back(lookType, addons);
+	outfitsMap.emplace_back(lookType, addons);
 }
 
 bool Player::removeOutfit(uint16_t lookType) {
-	for (auto it = outfits.begin(), end = outfits.end(); it != end; ++it) {
-		const auto &entry = *it;
-		if (entry.lookType == lookType) {
-			outfits.erase(it);
+		for (auto it = outfitsMap.begin(), end = outfitsMap.end(); it != end; ++it) {
+		auto &outfitEntry = *it;
+		if (outfitEntry.lookType == lookType) {
+			outfitsMap.erase(it);
 			return true;
 		}
 	}
@@ -6336,7 +6388,7 @@ bool Player::removeOutfit(uint16_t lookType) {
 }
 
 bool Player::removeOutfitAddon(uint16_t lookType, uint8_t addons) {
-	for (OutfitEntry &outfitEntry : outfits) {
+	for (auto &outfitEntry : outfitsMap) {
 		if (outfitEntry.lookType == lookType) {
 			outfitEntry.addons &= ~addons;
 			return true;
@@ -6355,7 +6407,7 @@ bool Player::getOutfitAddons(const std::shared_ptr<Outfit> &outfit, uint8_t &add
 		return false;
 	}
 
-	for (const OutfitEntry &outfitEntry : outfits) {
+	for (const auto &outfitEntry : outfitsMap) {
 		if (outfitEntry.lookType != outfit->lookType) {
 			continue;
 		}
@@ -7254,10 +7306,9 @@ void Player::sendUnjustifiedPoints() const {
 	}
 }
 
-uint8_t Player::getLastMount() const {
-	const int32_t value = getStorageValue(PSTRG_MOUNTS_CURRENTMOUNT);
-	if (value > 0) {
-		return static_cast<uint8_t>(value);
+uint16_t Player::getLastMount() const {
+	if (currentMount > 0) {
+		return currentMount;
 	}
 	const auto lastMount = kv()->get("last-mount");
 	if (!lastMount.has_value()) {
@@ -7267,16 +7318,12 @@ uint8_t Player::getLastMount() const {
 	return static_cast<uint8_t>(lastMount->get<int>());
 }
 
-uint8_t Player::getCurrentMount() const {
-	const int32_t value = getStorageValue(PSTRG_MOUNTS_CURRENTMOUNT);
-	if (value > 0) {
-		return value;
-	}
-	return 0;
+uint16_t Player::getCurrentMount() const {
+	return currentMount;
 }
 
-void Player::setCurrentMount(uint8_t mount) {
-	addStorageValue(PSTRG_MOUNTS_CURRENTMOUNT, mount);
+void Player::setCurrentMount(uint16_t mountId) {
+	currentMount = mountId;
 }
 
 bool Player::hasAnyMount() const {
@@ -7286,8 +7333,8 @@ bool Player::hasAnyMount() const {
 	});
 }
 
-uint8_t Player::getRandomMountId() const {
-	std::vector<uint8_t> playerMounts;
+uint16_t Player::getRandomMountId() const {
+	std::vector<uint16_t> playerMounts;
 	const auto mounts = g_game().mounts->getMounts();
 	for (const auto &mount : mounts) {
 		if (hasMount(mount)) {
@@ -7333,7 +7380,7 @@ bool Player::toggleMount(bool mount) {
 			return false;
 		}
 
-		uint8_t currentMountId = getLastMount();
+		uint16_t currentMountId = getLastMount();
 		if (currentMountId == 0) {
 			sendOutfitWindow();
 			return false;
@@ -7385,50 +7432,42 @@ bool Player::toggleMount(bool mount) {
 	return true;
 }
 
-bool Player::tameMount(uint8_t mountId) {
-	if (!g_game().mounts->getMountByID(mountId)) {
-		return false;
-	}
+bool Player::tameMount(uint16_t mountId) {
+    if (!g_game().mounts->getMountByID(mountId)) {
+        return false;
+    }
 
-	const uint8_t tmpMountId = mountId - 1;
-	const uint32_t key = PSTRG_MOUNTS_RANGE_START + (tmpMountId / 31);
+    const auto mount = g_game().mounts->getMountByID(mountId);
+	
+    if (hasMount(mount)) {
+        return false;
+    }
 
-	int32_t value = getStorageValue(key);
-	if (value != -1) {
-		value |= (1 << (tmpMountId % 31));
-	} else {
-		value = (1 << (tmpMountId % 31));
-	}
-
-	addStorageValue(key, value);
+	mountsMap.emplace(mountId);
 	return true;
 }
 
-bool Player::untameMount(uint8_t mountId) {
-	if (!g_game().mounts->getMountByID(mountId)) {
-		return false;
-	}
+bool Player::untameMount(uint16_t mountId) {
+    if (!g_game().mounts->getMountByID(mountId)) {
+        return false;
+    }
 
-	const uint8_t tmpMountId = mountId - 1;
-	const uint32_t key = PSTRG_MOUNTS_RANGE_START + (tmpMountId / 31);
+    const auto mount = g_game().mounts->getMountByID(mountId);
+    if (!hasMount(mount)) {
+        return false;
+    }
 
-	int32_t value = getStorageValue(key);
-	if (value == -1) {
-		return true;
-	}
-
-	value &= ~(1 << (tmpMountId % 31));
-	addStorageValue(key, value);
+	mountsMap.erase(mountId);
 
 	if (getCurrentMount() == mountId) {
-		if (isMounted()) {
-			dismount();
-			g_game().internalCreatureChangeOutfit(static_self_cast<Player>(), defaultOutfit);
-		}
+        if (isMounted()) {
+            dismount();
+            g_game().internalCreatureChangeOutfit(static_self_cast<Player>(), defaultOutfit);
+        }
 
 		setCurrentMount(0);
-		kv()->set("last-mount", 0);
-	}
+        kv()->set("last-mount", 0);
+    }
 
 	return true;
 }
@@ -7442,14 +7481,7 @@ bool Player::hasMount(const std::shared_ptr<Mount> &mount) const {
 		return false;
 	}
 
-	const uint8_t tmpMountId = mount->id - 1;
-
-	const int32_t value = getStorageValue(PSTRG_MOUNTS_RANGE_START + (tmpMountId / 31));
-	if (value == -1) {
-		return false;
-	}
-
-	return ((1 << (tmpMountId % 31)) & value) != 0;
+	return mountsMap.find(mount->id) != mountsMap.end();
 }
 
 void Player::dismount() {
@@ -11221,11 +11253,11 @@ uint16_t Player::getDodgeChance() const {
 	return chance;
 }
 
-uint8_t Player::isRandomMounted() const {
+uint16_t Player::isRandomMounted() const {
 	return randomMount;
 }
 
-void Player::setRandomMount(uint8_t isMountRandomized) {
+void Player::setRandomMount(uint16_t isMountRandomized) {
 	randomMount = isMountRandomized;
 }
 
