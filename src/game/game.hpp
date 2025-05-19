@@ -71,7 +71,7 @@ static constexpr int32_t EVENT_LUA_GARBAGE_COLLECTION = 60000 * 10; // 10min
 
 static constexpr std::chrono::minutes CACHE_EXPIRATION_TIME { 10 }; // 10min
 static constexpr std::chrono::minutes HIGHSCORE_CACHE_EXPIRATION_TIME { 10 }; // 10min
-static constexpr int32_t UPDATE_PLAYERS_ONLINE_DB = 60000 * 10; // 10min
+ 
 
 struct QueryHighscoreCacheEntry {
 	std::string query;
@@ -947,7 +947,7 @@ private:
 	std::string generateHighscoreOrGetCachedQueryForEntries(const std::string &categoryName, const std::string &world, uint32_t page, uint8_t entriesPerPage, uint32_t vocation);
 	std::string generateHighscoreOrGetCachedQueryForOurRank(const std::string &categoryName, uint8_t entriesPerPage, uint32_t playerGUID, uint32_t vocation);
 
-	void updatePlayersOnline() const;
+ 
 };
 
 constexpr auto g_game = Game::getInstance;

@@ -445,6 +445,32 @@ void IOLoginData::removeGuidVIPGroupEntry(uint32_t accountId, uint32_t guid) {
 	g_database().executeQuery(query);
 }
 
+void IOLoginData::updateOnlineStatus(uint32_t guid, bool login) {
+    if (!guid) {
+        return;
+    }
+    
+	const auto worldId = static_cast<uint16_t>(g_game().worlds().getCurrentWorld()->id);
+
+	std::string query;
+	if (login) {
+		query = fmt::format(
+			"INSERT INTO `players_online` (`player_id`, `world_id`) VALUES ({}, {}) "
+			"ON DUPLICATE KEY UPDATE `world_id` = VALUES(`world_id`);",
+			guid, worldId
+		);
+	} else {
+		query = fmt::format(
+			"DELETE FROM `players_online` WHERE `player_id` = {} AND `world_id` = {};",
+			guid, worldId
+		);
+	}
+	g_database().executeQuery(query);
+}
+
+
+
+
 void IOLoginData::createFirstWorld() {
 	const auto &result = g_database().storeQuery("SELECT * FROM `worlds`");
 

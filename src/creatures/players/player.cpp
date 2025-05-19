@@ -10664,6 +10664,7 @@ void Player::onCreatureAppear(const std::shared_ptr<Creature> &creature, bool is
 		}
 
 		g_game().changePlayerSpeed(static_self_cast<Player>(), 0);
+		IOLoginData::updateOnlineStatus(guid, true);
 	}
 }
 
@@ -10686,6 +10687,7 @@ void Player::onRemoveCreature(const std::shared_ptr<Creature> &creature, bool is
 			g_logger().info("{} has logged out", getName());
 			g_chat().removeUserFromAllChannels(player);
 			clearPartyInvitations();
+			IOLoginData::updateOnlineStatus(guid, false);
 		}
 
 		if (eventWalk != 0) {
@@ -10697,7 +10699,7 @@ void Player::onRemoveCreature(const std::shared_ptr<Creature> &creature, bool is
 		}
 
 		closeShopWindow();
-
+		
 		g_saveManager().savePlayer(player);
 	}
 
@@ -11502,7 +11504,7 @@ void Player::resetOldCharms() {
 bool Player::isFirstOnStack() const {
 	const auto &playerTile = getTile();
 	if (!playerTile) {
-		return false;
+		return true;
 	}
 
 	const auto &bottomCreature = playerTile->getBottomCreature();
