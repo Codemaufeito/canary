@@ -88,6 +88,9 @@ struct TextMessage {
 	} primary, secondary;
 };
 
+
+static constexpr size_t MAX_KNOWN_CREATURES = 1300;
+
 class ProtocolGame final : public Protocol {
 public:
 	// Static protocol information.
@@ -123,7 +126,8 @@ private:
 	void release() override;
 
 	void checkCreatureAsKnown(uint32_t id, bool &known, uint32_t &removedKnown);
-
+	void removeCreature(uint32_t id);
+	
 	bool canSee(int32_t x, int32_t y, int32_t z) const;
 	bool canSee(const std::shared_ptr<Creature> &) const;
 	bool canSee(const Position &pos) const;
@@ -537,7 +541,8 @@ private:
 
 	std::unordered_set<uint32_t> knownCreatureSet;
 	std::shared_ptr<Player> player = nullptr;
-
+	
+	std::list<uint32_t> creatureOrder;
 	uint32_t eventConnect = 0;
 	uint32_t challengeTimestamp = 0;
 	uint16_t version = 0;
